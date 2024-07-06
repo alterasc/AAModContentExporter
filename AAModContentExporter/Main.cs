@@ -1,9 +1,4 @@
 ﻿using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Reflection;
 using UnityModManagerNet;
 using static UnityModManagerNet.UnityModManager;
@@ -13,12 +8,14 @@ namespace AAModContentExporter;
 #if DEBUG
 [EnableReloading]
 #endif
-public static class Main {
+public static class Main
+{
     internal static Harmony HarmonyInstance;
     internal static UnityModManager.ModEntry.ModLogger log;
     internal static ModEntry ModEntry;
     public static string ExportOutput => ModEntry.Path;
-    public static bool Load(UnityModManager.ModEntry modEntry) {
+    public static bool Load(UnityModManager.ModEntry modEntry)
+    {
         ModEntry = modEntry;
         log = modEntry.Logger;
 #if DEBUG
@@ -30,7 +27,8 @@ public static class Main {
         return true;
     }
 
-    public static void OnGUI(UnityModManager.ModEntry modEntry) {
+    public static void OnGUI(UnityModManager.ModEntry modEntry)
+    {
 
     }
 

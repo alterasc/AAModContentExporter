@@ -44,7 +44,7 @@ internal class ContentTracker
         sb.AppendLine("| --- | --- | --- |");
         foreach (var spell in analyzed.Where(x => x.IsSpell))
         {
-            var books = string.Join(",", spell.SpellEntries);
+            var books = string.Join(", ", spell.SpellEntries);
             sb.AppendLine($"| {spell.Guid} | {spell.LocalizedName} | {books} |");
         }
         File.WriteAllText(userPath, sb.ToString());
