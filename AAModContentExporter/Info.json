@@ -1,0 +1,12 @@
+﻿{
+  "Id": "AAModContentExporter",
+  "DisplayName": "Mod Content Exporter",
+  "Author": "",
+  "Version": "1.0.0",
+  "ManagerVersion": "0.27.11",
+  "Requirements": [],
+  "AssemblyName": "AAModContentExporter.dll",
+  "EntryMethod": "AAModContentExporter.Main.Load",
+  "HomePage": "",
+  "Repository": ""
+}
