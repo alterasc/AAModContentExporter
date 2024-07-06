@@ -34,6 +34,22 @@ internal class ContentTracker
         WriteAllFeats(analyzed);
 
         WriteAllSpells(analyzed);
+
+        WriteAllClassFeatures(analyzed);
+    }
+
+    private static void WriteAllClassFeatures(List<BlueprintData> analyzed)
+    {
+        var userPath = $"{Main.ExportOutput}{Path.DirectorySeparatorChar}ClassFeatures.md";
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine("| Guid | Name | Class/Archetype |");
+        sb.AppendLine("| --- | --- | --- |");
+        foreach (var classFeature in analyzed.Where(x => x.IsClassFeature))
+        {
+            var levelEntries = string.Join(", ", classFeature.ClassLevelEntries);
+            sb.AppendLine($"| {classFeature.Guid} | {classFeature.LocalizedName} | {levelEntries} |");
+        }
+        File.WriteAllText(userPath, sb.ToString());
     }
 
     private static void WriteAllSpells(List<BlueprintData> analyzed)

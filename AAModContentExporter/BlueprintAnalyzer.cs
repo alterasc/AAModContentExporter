@@ -10,13 +10,32 @@ using System.Linq;
 namespace AAModContentExporter;
 public static class BlueprintAnalyzer
 {
+    static HashSet<BlueprintGuid> AddedClasses = [];
+    static HashSet<BlueprintGuid> AddedArchetypes = [];
+
     static Dictionary<BlueprintGuid, HashSet<SpellEntry>> AllSpells = [];
+    static Dictionary<BlueprintGuid, HashSet<ClassLevelEntry>> ClassFeatures = [];
     static HashSet<BlueprintGuid> AllFeats = [];
     public static void Init()
     {
         var featSelection = Utils.GetBlueprint<BlueprintFeatureSelection>("247a4068296e8be42890143f451b4b45");
         AllFeats = featSelection.m_AllFeatures.Select(x => x.Guid).ToHashSet();
+        AddedClasses = ContentTracker.modBlueprints.Values
+            .Where(x => x is BlueprintCharacterClass)
+            .Select(x => x.AssetGuid)
+            .ToHashSet();
 
+        AddedArchetypes = ContentTracker.modBlueprints.Values
+            .Where(x => x is BlueprintArchetype)
+            .Select(x => x.AssetGuid)
+            .ToHashSet();
+
+        LoadClassSpells();
+        LoadDirectClassFeatures();
+    }
+
+    private static void LoadClassSpells()
+    {
         var playerClasses = BlueprintRoot.Instance.Progression.m_CharacterClasses;
 
         List<string> exClasses = [
@@ -89,6 +108,63 @@ public static class BlueprintAnalyzer
         }
     }
 
+    public static void LoadDirectClassFeatures()
+    {
+        var playerClasses = BlueprintRoot.Instance.Progression.m_CharacterClasses;
+
+        List<string> exClasses = [
+            "f5b8c63b141b2f44cbb8c2d7579c34f5", // eldritch scion class
+            ];
+        var excludedClasses = exClasses.Select(x => new BlueprintGuid(new System.Guid(x))).ToHashSet();
+        var filteredClasses = playerClasses.Select(x => x.Get())
+            .Where(x => !excludedClasses.Contains(x.AssetGuid))
+            .Where(x => !AddedClasses.Contains(x.AssetGuid))
+            .ToList();
+        foreach (var cClass in filteredClasses) {
+            var progression = cClass.Progression;
+            var className = cClass.LocalizedName;
+            foreach(var entry in progression.LevelEntries)
+            {
+                foreach(var f in entry.m_Features)
+                {
+                    ClassFeatures.TryGetValue(f.Guid, out var classEntries);
+                    if (classEntries == null)
+                    {
+                        classEntries = [];
+                        ClassFeatures[f.Guid] = classEntries;
+                    }
+                    classEntries.Add(new ClassLevelEntry(className, entry.Level));
+                }
+            }
+        }
+
+        List<string> exArchetypes = [];
+        var excludedArchetypes = exArchetypes.Select(x => new BlueprintGuid(new System.Guid(x))).ToHashSet();
+        var archetypes = playerClasses.Select(x => x.Get())
+            .SelectMany(x => x.Archetypes)
+            .Where(x => !excludedArchetypes.Contains(x.AssetGuid))
+            .Where(x => !AddedArchetypes.Contains(x.AssetGuid))
+            .ToList();
+        foreach (var archetype in archetypes)
+        {
+            var progression = archetype.AddFeatures;
+            var className = archetype.LocalizedName;
+            foreach (var entry in progression)
+            {
+                foreach (var f in entry.m_Features)
+                {
+                    ClassFeatures.TryGetValue(f.Guid, out var classEntries);
+                    if (classEntries == null)
+                    {
+                        classEntries = [];
+                        ClassFeatures[f.Guid] = classEntries;
+                    }
+                    classEntries.Add(new ClassLevelEntry(className, entry.Level));
+                }
+            }
+        }
+    }
+    
     public static BlueprintData Analyze(SimpleBlueprint bp)
     {
         var result = new BlueprintData();
@@ -113,6 +189,12 @@ public static class BlueprintAnalyzer
             else if (bp is BlueprintFeature feature)
             {
                 result.IsFeat = AllFeats.Contains(feature.AssetGuid);
+                ClassFeatures.TryGetValue(feature.AssetGuid, out var classEntries);
+                if (classEntries != null)
+                {
+                    result.IsClassFeature = true;
+                    result.ClassLevelEntries = classEntries;
+                }
             }
         }
         return result;
@@ -128,7 +210,9 @@ public class BlueprintData
     public bool IsUnitFact;
     public bool IsFeat;
     public bool IsSpell;
+    public bool IsClassFeature;
     public HashSet<SpellEntry> SpellEntries;
+    public HashSet<ClassLevelEntry> ClassLevelEntries;
 }
 
 public class SpellEntry
@@ -145,6 +229,38 @@ public class SpellEntry
     public override bool Equals(object obj)
     {
         return obj is SpellEntry entry &&
+               className == entry.className &&
+               level == entry.level;
+    }
+
+    public override int GetHashCode()
+    {
+        int hashCode = 88113433;
+        hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(className);
+        hashCode = hashCode * -1521134295 + level.GetHashCode();
+        return hashCode;
+    }
+
+    public override string ToString()
+    {
+        return $"{className} {level}";
+    }
+}
+
+public class ClassLevelEntry
+{
+    public string className;
+    public int level;
+
+    public ClassLevelEntry(string className, int level)
+    {
+        this.className = className;
+        this.level = level;
+    }
+
+    public override bool Equals(object obj)
+    {
+        return obj is ClassLevelEntry entry &&
                className == entry.className &&
                level == entry.level;
     }
