@@ -17,6 +17,7 @@ public class ProcessedMod
 {
     public string ModId { get; set; }
     public string Version { get; set; }
+    public string DisplayName { get; set; }
 }
 
 public class ModFinderManifestEntry
@@ -30,4 +31,11 @@ public class ModFinderManifestEntryId
 {
     public string Id { get; set; }
     public string Type { get; set; }
+}
+
+public class TTTStyleBlueprints
+{
+    public Dictionary<string, string> NewBlueprints { get; set; } = [];
+    public Dictionary<string, string> DerivedBlueprintMasters { get; set; } = [];
+    public Dictionary<string, string> DerivedBlueprints { get; set; } = [];
 }

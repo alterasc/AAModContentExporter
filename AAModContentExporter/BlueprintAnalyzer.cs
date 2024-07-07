@@ -192,7 +192,7 @@ public static class BlueprintAnalyzer
             {
                 Main.log.Log($"Archetype with no class: {archetype.LocalizedName}");
             }
-            if (origClass != null && Exporter.BaseGameGuids.Contains(origClass.AssetGuid))
+            if (origClass != null && Exporter.KnownGuids.Contains(origClass.AssetGuid))
             {
                 result.IsArchetypeForBaseClass = true;
                 result.DisplayName = archetype.LocalizedName;
