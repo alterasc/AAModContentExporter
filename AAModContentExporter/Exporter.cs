@@ -139,6 +139,10 @@ public static class Exporter
 
         foreach (var procMod in scanMetaData.ProcessedMods)
         {
+            if (procMod.ModId == modInfo.Id)
+            {
+                continue;
+            }
             var path = $"{Main.ModSettings.OutputFolder}{Path.DirectorySeparatorChar}docs{Path.DirectorySeparatorChar}{procMod.ModId}{Path.DirectorySeparatorChar}blueprintguids.bin";
             if (File.Exists(path))
             {
@@ -312,7 +316,7 @@ public static class Exporter
             };
 
             scanMetaData.ProcessedMods = scanMetaData.ProcessedMods
-                .Where(x => x.ModId != modInfo.Id)
+                .Where(x => x.ModId != modInfo.Id) // that line is for when we process new version of some mod
                 .Concat([a])
                 .OrderBy(x => x.ModId)
                 .ToList();
