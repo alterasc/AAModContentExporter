@@ -35,6 +35,16 @@ public static class Utils
         }
         return obj;
     }
+
+    public static T GetBlueprint<T>(BlueprintGuid id) where T : SimpleBlueprint
+    {
+        if (ResourcesLibrary.TryGetBlueprint(id) is not T obj)
+        {
+            throw new InvalidReferenceException(id.ToString());
+        }
+        return obj;
+    }
+
     public static T GetBlueprint<T>(Guid guid) where T : SimpleBlueprint
     {
         if (guid == null || guid == Guid.Empty)
