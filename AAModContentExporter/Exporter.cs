@@ -50,6 +50,7 @@ public static class Exporter
             Main.log.Log($"Missing scanmetadata.json at ${ExportOutput}");
             return;
         }
+
         var excludedMods = scanMetaData.ExcludedMods;
 
         Main.log.Log($"Excluded from analysis: {excludedMods.Count} mods");
@@ -218,7 +219,7 @@ public static class Exporter
                 ModFinderManifestEntry[] manifestEntries = [];
                 ModFinderManifestEntry modManifest = null;
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine("[To list of mods](../README.md)");
+                sb.AppendLine("[Back to site homepage](../README.md)");
                 sb.AppendLine();
                 sb.AppendLine($"# {modToAnalyze.DisplayName}");
                 sb.AppendLine();
@@ -319,7 +320,7 @@ public static class Exporter
                 }
                 sb.AppendLine();
                 sb.AppendLine("___");
-                sb.AppendLine("[To list of mods](../README.md)");
+                sb.AppendLine("[Back to site homepage](../README.md)");
 
                 var readmepath = $"{ExportOutput}{Path.DirectorySeparatorChar}README.md";
                 File.WriteAllText(readmepath, sb.ToString());
@@ -338,8 +339,26 @@ public static class Exporter
         serializer.Serialize(jsonWriter, scanMetaData);
 
         RegenerateReadme(scanMetaData);
+        MakeAllGuidsFile();
     }
 
+    internal static void MakeAllGuidsFile()
+    {
+        StringBuilder stringBuilder = new StringBuilder();
+        foreach (var procMod in scanMetaData.ProcessedMods)
+        {
+            var path = $"{Main.ModSettings.OutputFolder}{Path.DirectorySeparatorChar}docs{Path.DirectorySeparatorChar}{procMod.ModId}{Path.DirectorySeparatorChar}blueprintguids.bin";
+            if (File.Exists(path))
+            {
+                var processed = GuidSerialization.DeserializeGuids(path);
+                foreach (var mod in processed) {
+                    stringBuilder.AppendLine($"{mod} - {procMod.DisplayName}");
+                }
+            }
+        }
+        var readmepath = $"{Main.ExportRepoLocation}{Path.DirectorySeparatorChar}all_blueprints.txt";
+        File.WriteAllText(readmepath, stringBuilder.ToString());
+    }
 
     internal static void RegenerateReadme(ScanMetaData scanMetaData)
     {
@@ -348,14 +367,19 @@ public static class Exporter
 
             ### Disclaimer
 
-            - Information is collected automatically
+            - Below are only those mods that create new blueprints
+            - Information is collected automatically with no manual oversight and no filtering beyond by group. If in classes you see creature only class - that's not a list error.
             - Provides no guarantees of correctness
             - May be outdated by the time you read it
-            - Does not encompass all mods out there.
+            - Does not encompass all mods out there and is not in any way replacement of mod readme
 
+            **Table of Contents**
+            - [List of content by mod](#list-of-content-by-mod)
+            - [List of content by category](#list-of-content-by-category)
+            - [Raw list of blueprints for troubleshooting](#raw-list-of-blueprints-for-troubleshooting)
 
-            ## Scanned mods
-
+            ## List of content by mod
+            
             """;
         StringBuilder sb = new StringBuilder();
         sb.AppendLine(start);
@@ -364,6 +388,48 @@ public static class Exporter
             sb.AppendLine($"### [{mod.DisplayName}](./{mod.ModId}/README.md) {mod.Version}");
             sb.AppendLine();
         }
+        sb.AppendLine();
+        var mid = """
+            ## List of content by category
+
+            ### [New classes](./Classes.md)
+            
+            ### [New archetypes for base game classes](./Archetypes.md)
+            
+            ### [New feats](./Feats.md)
+            
+            ### [New spells](./Spells.md)
+            
+            ### [New mythic feats](./MythicFeats.md)
+            
+            ### [New mythic abilities](./MythicAbilities.md)
+            
+            ### [New domains](./Domains.md)
+            
+            ### [New racial heritages](./RacialHeritages.md)
+            
+            ### [New sorcerer bloodlines](./SorcererBloodlines.md)
+            
+            ### [New oracle mysteries](./OracleMysteries.md)
+            
+            ### [New rage powers](./RagePowers.md)
+            
+            ### [New rogue talents](./RogueTalents.md)
+            
+            ### [New slayer talents](./SlayerTalents.md)
+            
+            ### [New ki powers](./KiPowers.md)
+            
+            ### [New items](./Items.md)
+
+            ## Raw list of blueprints for troubleshooting
+
+            This is for when you have in log missing error blueprint with some guid, and you want to know which mod it is from.  
+            Copy guid, open the link below and just Ctrl-F (search) on the page
+
+            ### [all_blueprints.txt](https://raw.githubusercontent.com/alterasc/alterasc.github.io/main/all_blueprints.txt)
+            """;
+        sb.AppendLine(mid);
         var readmeToC = $"{Main.ExportRepoLocation}{Path.DirectorySeparatorChar}docs{Path.DirectorySeparatorChar}README.md";
         File.WriteAllText(readmeToC, sb.ToString());
     }

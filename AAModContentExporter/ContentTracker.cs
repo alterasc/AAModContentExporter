@@ -11,5 +11,6 @@ internal class ContentTracker
     public static void Export()
     {
         Exporter.Export();
+        AggregatedTotalsMaker.RecreateTotals(Exporter.scanMetaData);
     }
 }
