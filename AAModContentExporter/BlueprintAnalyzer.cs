@@ -207,7 +207,14 @@ public static class BlueprintAnalyzer
             {
                 result.DisplayName = unitFact.m_DisplayName.ToString();
             }
-            result.Description = unitFact.m_Description != null ? unitFact.Description : string.Empty;
+            try
+            {
+                result.Description = unitFact.m_Description != null ? unitFact.Description : string.Empty;
+            }
+            catch (System.Exception)
+            {
+                Main.log.Log($"Couldn't find description for {unitFact.name}");
+            }
             if (bp is BlueprintAbility ability)
             {
                 AllSpells.TryGetValue(ability.AssetGuid, out var spellEntries);

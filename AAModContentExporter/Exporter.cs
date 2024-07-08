@@ -1,5 +1,6 @@
 ﻿using AAModContentExporter.Exporters;
 using Kingmaker.Blueprints;
+using Kingmaker.Modding;
 using Kingmaker.Utility;
 using Newtonsoft.Json;
 using System;
@@ -84,46 +85,70 @@ public static class Exporter
             })
             .ToList();
 
-        Main.log.Log($"New mods: {newMods.Count}");
+        var owlMods = OwlcatModificationsManager.Instance
+            .AppliedModifications
+            .Where(x =>
+            {
+                return !scanMetaData.ProcessedMods.Any(y => y.ModId == x.Manifest.UniqueName && y.Version == x.Manifest.Version);
+            })
+            .ToList();
 
-        if (newMods.Count == 0)
+        var newModsTotal = newMods.Count + owlMods.Count;
+        Main.log.Log($"New UMM mods: {newMods.Count}");
+        Main.log.Log($"New Owl mods: {owlMods.Count}");
+
+        if (newModsTotal == 0)
         {
             return;
         }
 
-        if (newMods.Count > 1)
+        if (newModsTotal > 1)
         {
             Main.log.Log("Found more than one unprocessed mod, skipping export");
             foreach (var mod in newMods)
             {
                 Main.log.Log($"{mod.Info.Id} - {mod.Info.Version} - {mod.Info.DisplayName}");
             }
+            foreach (var mod in owlMods)
+            {
+                Main.log.Log($"{mod.Manifest.UniqueName} - {mod.Manifest.Version} - {mod.Manifest.DisplayName}");
+            }
             return;
         }
-        var modToAnalyze = newMods.First();
-        var modInfo = modToAnalyze.Info;
-
-        var blueprintsPath = $"{modToAnalyze.Path}{Path.DirectorySeparatorChar}UserSettings{Path.DirectorySeparatorChar}Blueprints.json";
+        var modToAnalyze = new ProcessedMod
+        {
+            ModId = newMods.Count == 1 ? newMods.First().Info.Id : owlMods.First().Manifest.UniqueName,
+            Version = newMods.Count == 1 ? newMods.First().Info.Version : owlMods.First().Manifest.Version,
+            DisplayName = newMods.Count == 1 ? newMods.First().Info.DisplayName : owlMods.First().Manifest.DisplayName,
+        };
+        var author = newMods.Count == 1 ? newMods.First().Info.Author : owlMods.First().Manifest.Author;
+        var homePage = newMods.Count == 1 ? newMods.First().Info.HomePage : owlMods.First().Manifest.HomePage;
 
         var blueprintModCount = 0;
         TTTStyleBlueprints blueprintsJson = null;
-        if (File.Exists(blueprintsPath))
+
+        if (newMods.Count == 1)
         {
-            try
+            var modPath = newMods.First().Path;
+            var blueprintsPath = $"{modPath}{Path.DirectorySeparatorChar}UserSettings{Path.DirectorySeparatorChar}Blueprints.json";
+            if (File.Exists(blueprintsPath))
             {
-                using StreamReader streamReader = File.OpenText(blueprintsPath);
-                using JsonReader jsonReader = new JsonTextReader(streamReader);
-                blueprintsJson = serializer.Deserialize<TTTStyleBlueprints>(jsonReader);
-                blueprintModCount = blueprintsJson.NewBlueprints.Count + blueprintsJson.DerivedBlueprints.Count + blueprintsJson.DerivedBlueprintMasters.Count;
-                Main.log.Log($"Mod Blueprints.json announce {blueprintModCount} new blueprints");
-            }
-            catch (Exception ex)
-            {
-                Main.log.Log($"Failed to read Blueprints.json: {ex.Message}");
+                try
+                {
+                    using StreamReader streamReader = File.OpenText(blueprintsPath);
+                    using JsonReader jsonReader = new JsonTextReader(streamReader);
+                    blueprintsJson = serializer.Deserialize<TTTStyleBlueprints>(jsonReader);
+                    blueprintModCount = blueprintsJson.NewBlueprints.Count + blueprintsJson.DerivedBlueprints.Count + blueprintsJson.DerivedBlueprintMasters.Count;
+                    Main.log.Log($"Mod Blueprints.json announce {blueprintModCount} new blueprints");
+                }
+                catch (Exception ex)
+                {
+                    Main.log.Log($"Failed to read Blueprints.json: {ex.Message}");
+                }
             }
         }
 
-        ExportOutput = $"{Main.ModSettings.OutputFolder}{Path.DirectorySeparatorChar}docs{Path.DirectorySeparatorChar}{modInfo.Id}";
+        ExportOutput = $"{Main.ModSettings.OutputFolder}{Path.DirectorySeparatorChar}docs{Path.DirectorySeparatorChar}{modToAnalyze.ModId}";
         if (!Directory.Exists(ExportOutput))
         {
             Directory.CreateDirectory(ExportOutput);
@@ -139,7 +164,7 @@ public static class Exporter
 
         foreach (var procMod in scanMetaData.ProcessedMods)
         {
-            if (procMod.ModId == modInfo.Id)
+            if (procMod.ModId == modToAnalyze.ModId)
             {
                 continue;
             }
@@ -158,7 +183,7 @@ public static class Exporter
 
         if (newBlueprints.Count == 0)
         {
-            scanMetaData.ExcludedMods.Add(modInfo.Id);
+            scanMetaData.ExcludedMods.Add(modToAnalyze.ModId);
             scanMetaData.ExcludedMods.Sort();
         }
         else
@@ -166,7 +191,14 @@ public static class Exporter
 
             foreach (var key in newBlueprints)
             {
-                ModBlueprints[key.AssetGuid] = key;
+                if (key == null)
+                {
+                    Main.log.Log($"What the fuck, null key");
+                }
+                else
+                {
+                    ModBlueprints[key.AssetGuid] = key;
+                }
             }
 
             Main.log.Log($"New blueprints: {newBlueprints.Count}");
@@ -185,32 +217,16 @@ public static class Exporter
             {
                 ModFinderManifestEntry[] manifestEntries = [];
                 ModFinderManifestEntry modManifest = null;
-                try
-                {
-                    if (File.Exists(Main.ModSettings.ModfinderInternalManifestPath))
-                    {
-                        var newSer = JsonSerializer.Create();
-                        using StreamReader streamReader = File.OpenText(exportMetaData);
-                        using JsonReader jsonReader = new JsonTextReader(streamReader);
-                        manifestEntries = newSer.Deserialize<ModFinderManifestEntry[]>(jsonReader);
-                    }
-                    modManifest = manifestEntries.FirstOrDefault(x => x.Id.Id == modInfo.Id);
-
-                }
-                catch (Exception e)
-                {
-                    Main.log.Log($"Coulnd't get information from modfinder manifest: {e.Message}");
-                }
                 StringBuilder sb = new StringBuilder();
                 sb.AppendLine("[To list of mods](../README.md)");
                 sb.AppendLine();
-                sb.AppendLine($"# {modInfo.DisplayName}");
+                sb.AppendLine($"# {modToAnalyze.DisplayName}");
                 sb.AppendLine();
-                sb.AppendLine($"## Version: {modInfo.Version}");
+                sb.AppendLine($"## Version: {modToAnalyze.Version}");
                 sb.AppendLine();
-                sb.AppendLine($"## Author: {modInfo.Author}");
+                sb.AppendLine($"## Author: {author}");
                 sb.AppendLine();
-                var homeUrl = string.IsNullOrEmpty(modInfo.HomePage) ? modManifest?.HomepageUrl : modInfo.HomePage;
+                var homeUrl = homePage;
                 sb.AppendLine($"## Homepage: [{homeUrl}]({homeUrl})");
                 sb.AppendLine();
                 if (modManifest != null)
@@ -308,16 +324,10 @@ public static class Exporter
                 var readmepath = $"{ExportOutput}{Path.DirectorySeparatorChar}README.md";
                 File.WriteAllText(readmepath, sb.ToString());
             }
-            var a = new ProcessedMod
-            {
-                ModId = modInfo.Id,
-                DisplayName = modInfo.DisplayName,
-                Version = modInfo.Version,
-            };
 
             scanMetaData.ProcessedMods = scanMetaData.ProcessedMods
-                .Where(x => x.ModId != modInfo.Id) // that line is for when we process new version of some mod
-                .Concat([a])
+                .Where(x => x.ModId != modToAnalyze.ModId) // that line is for when we process new version of some mod
+                .Concat([modToAnalyze])
                 .OrderBy(x => x.ModId)
                 .ToList();
 
@@ -349,7 +359,7 @@ public static class Exporter
             """;
         StringBuilder sb = new StringBuilder();
         sb.AppendLine(start);
-        foreach (var mod in scanMetaData.ProcessedMods.OrderBy(x => x.ModId))
+        foreach (var mod in scanMetaData.ProcessedMods.OrderBy(x => x.DisplayName))
         {
             sb.AppendLine($"### [{mod.DisplayName}](./{mod.ModId}/README.md) {mod.Version}");
             sb.AppendLine();
