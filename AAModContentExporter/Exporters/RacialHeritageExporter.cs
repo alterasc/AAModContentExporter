@@ -16,9 +16,9 @@ internal static class RacialHeritageExporter
         }
         var userPath = $"{Exporter.ExportOutput}{Path.DirectorySeparatorChar}RacialHeritages.md";
         StringBuilder sb = new StringBuilder();
-        sb.AppendLine("### [Back to mod overview](./README.md)");
-        sb.AppendLine();
         sb.AppendLine("# Racial heritages");
+        sb.AppendLine();
+        sb.AppendLine("### [Back to mod overview](./README.md)");
         sb.AppendLine();
         foreach (var heritage in list)
         {

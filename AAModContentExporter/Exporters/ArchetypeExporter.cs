@@ -16,9 +16,9 @@ internal static class ArchetypeExporter
         }
         var userPath = $"{Exporter.ExportOutput}{Path.DirectorySeparatorChar}Archetypes.md";
         StringBuilder sb = new StringBuilder();
-        sb.AppendLine("### [Back to mod overview](./README.md)");
-        sb.AppendLine();
         sb.AppendLine("# Archetypes");
+        sb.AppendLine();
+        sb.AppendLine("### [Back to mod overview](./README.md)");
         sb.AppendLine();
         foreach (var archetype in list)
         {

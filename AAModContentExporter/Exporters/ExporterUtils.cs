@@ -13,9 +13,9 @@ public static class ExporterUtils
         }
         var userPath = $"{Exporter.ExportOutput}{Path.DirectorySeparatorChar}{fileName}.md";
         StringBuilder sb = new StringBuilder();
-        sb.AppendLine("### [Back to mod overview](./README.md)");
-        sb.AppendLine();
         sb.AppendLine($"# {title}");
+        sb.AppendLine();
+        sb.AppendLine("### [Back to mod overview](./README.md)");
         sb.AppendLine();
         foreach (var feat in list)
         {

@@ -150,10 +150,7 @@ public static class Exporter
         }
 
         ExportOutput = $"{Main.ModSettings.OutputFolder}{Path.DirectorySeparatorChar}docs{Path.DirectorySeparatorChar}{modToAnalyze.ModId}";
-        if (!Directory.Exists(ExportOutput))
-        {
-            Directory.CreateDirectory(ExportOutput);
-        }
+
 
 
         KnownGuids = new HashSet<BlueprintGuid>(GuidSerialization.DeserializeGuids(baseGame));
@@ -189,7 +186,10 @@ public static class Exporter
         }
         else
         {
-
+            if (!Directory.Exists(ExportOutput))
+            {
+                Directory.CreateDirectory(ExportOutput);
+            }
             foreach (var key in newBlueprints)
             {
                 if (key == null)
@@ -219,9 +219,9 @@ public static class Exporter
                 ModFinderManifestEntry[] manifestEntries = [];
                 ModFinderManifestEntry modManifest = null;
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine("[Back to site homepage](../README.md)");
-                sb.AppendLine();
                 sb.AppendLine($"# {modToAnalyze.DisplayName}");
+                sb.AppendLine();
+                sb.AppendLine("[Back to site homepage](../README.md)");
                 sb.AppendLine();
                 sb.AppendLine($"## Version: {modToAnalyze.Version}");
                 sb.AppendLine();

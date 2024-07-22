@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 namespace AAModContentExporter;
 public static class BlueprintAnalyzer
 {
+    static HashSet<BlueprintGuid> PlayerClasses = [];
     static HashSet<BlueprintGuid> AddedClasses = [];
     static HashSet<BlueprintGuid> AddedArchetypes = [];
 
@@ -57,9 +58,14 @@ public static class BlueprintAnalyzer
 
         SlayerTalents = Utils.GetBlueprint<BlueprintFeatureSelection>("913b9cf25c9536949b43a2651b7ffb66").m_AllFeatures.Select(x => x.Guid).ToHashSet();
 
+
+        PlayerClasses = BlueprintRoot.Instance.Progression.m_CharacterClasses
+            .Select(x => x.Guid).ToHashSet();
+
         AddedClasses = Exporter.ModBlueprints.Values
             .Where(x => x is BlueprintCharacterClass)
             .Select(x => x.AssetGuid)
+            .Where(x => PlayerClasses.Contains(x))
             .ToHashSet();
 
         AddedArchetypes = Exporter.ModBlueprints.Values
@@ -175,9 +181,12 @@ public static class BlueprintAnalyzer
         result.InternalName = bp.name ?? string.Empty;
         if (bp is BlueprintCharacterClass cClass)
         {
-            result.IsCharacterClass = true;
-            result.DisplayName = cClass.LocalizedName;
-            result.Description = (cClass.LocalizedDescription ?? cClass.LocalizedDescriptionShort).ToString() ?? string.Empty;
+            if (PlayerClasses.Contains(bp.AssetGuid))
+            {
+                result.IsCharacterClass = true;
+                result.DisplayName = cClass.LocalizedName;
+                result.Description = (cClass.LocalizedDescription ?? cClass.LocalizedDescriptionShort).ToString() ?? string.Empty;
+            }
         }
         else if (bp is BlueprintArchetype archetype)
         {

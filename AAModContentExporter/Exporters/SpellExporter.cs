@@ -16,9 +16,9 @@ internal static class SpellExporter
         }
         var userPath = $"{Exporter.ExportOutput}{Path.DirectorySeparatorChar}Spells.md";
         StringBuilder sb = new StringBuilder();
-        sb.AppendLine("### [Back to mod overview](./README.md)");
-        sb.AppendLine();
         sb.AppendLine("# New spells");
+        sb.AppendLine();
+        sb.AppendLine("### [Back to mod overview](./README.md)");
         sb.AppendLine();
         foreach (var spell in analyzed.Where(x => x.IsSpell).OrderBy(x => x.DisplayName))
         {

@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using Newtonsoft.Json;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -62,13 +63,22 @@ public static class Main
 
                 ModSettings = serializer.Deserialize<ModSettings>(jsonReader);
             }
-            HarmonyInstance = new Harmony(modEntry.Info.Id);
-            HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+
         }
         else
         {
-            log.Log("Settings file not found");
+            ModSettings = new ModSettings
+            {
+                OutputFolder = Environment.GetEnvironmentVariable("WrathModDBRepoPath")
+            };
+            log.Log($"Output path: {ModSettings.OutputFolder}");
+            if (string.IsNullOrEmpty(ModSettings.OutputFolder))
+            {
+                return true;
+            }
         }
+        HarmonyInstance = new Harmony(modEntry.Info.Id);
+        HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
         return true;
     }
 #if DEBUG

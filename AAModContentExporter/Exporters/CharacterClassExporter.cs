@@ -16,9 +16,9 @@ internal static class CharacterClassExporter
         }
         var userPath = $"{Exporter.ExportOutput}{Path.DirectorySeparatorChar}Classes.md";
         StringBuilder sb = new StringBuilder();
-        sb.AppendLine("### [Back to mod overview](./README.md)");
-        sb.AppendLine();
         sb.AppendLine("# Classes");
+        sb.AppendLine();
+        sb.AppendLine("### [Back to mod overview](./README.md)");
         sb.AppendLine();
         foreach (var characterClass in list)
         {

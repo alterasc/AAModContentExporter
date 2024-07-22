@@ -27,9 +27,9 @@ internal static class AggregatedTotalsMaker
     internal static void RecreateGenericTotal(ScanMetaData scanMetaData, string name, string title)
     {
         List<string> start = [
-            "### [Back to site homepage](./README.md)",
-            string.Empty,
             $"# {title}",
+            string.Empty,
+            "### [Back to site homepage](./README.md)",
             string.Empty
             ];
         var allLines = scanMetaData.ProcessedMods
