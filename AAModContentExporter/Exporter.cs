@@ -1,4 +1,5 @@
 ﻿using AAModContentExporter.Exporters;
+using AAModContentExporter.ModfinderIntegration;
 using Kingmaker.Blueprints;
 using Kingmaker.Modding;
 using Kingmaker.Utility;
@@ -49,6 +50,27 @@ public static class Exporter
         {
             Main.log.Log($"Missing scanmetadata.json at ${ExportOutput}");
             return;
+        }
+        var latestModVersions = UpdateChecker.ReadModfinderManifest();
+        foreach (var modManifest in latestModVersions)
+        {
+            var modId = modManifest.Key;
+            var manifestVersion = modManifest.Value;
+            var scanned = scanMetaData.ProcessedMods.FirstOrDefault(x => x.ModId == modId);
+            if (scanned != null)
+            {
+                if (manifestVersion != scanned.Version)
+                {
+                    Main.log.Log($"{scanned.DisplayName} ({scanned.ModId}) processed version: {scanned.Version}, latest: {manifestVersion}");
+                }
+                continue;
+            }
+            var ex = scanMetaData.ExcludedMods.FirstOrDefault(x => x == modId);
+            if (ex != null)
+            {
+                continue;
+            }
+            Main.log.Log($"Mod {modId} is in Modfinder manifest, not scanned or excluded.");
         }
 
         var excludedMods = scanMetaData.ExcludedMods;
@@ -351,7 +373,8 @@ public static class Exporter
             if (File.Exists(path))
             {
                 var processed = GuidSerialization.DeserializeGuids(path);
-                foreach (var mod in processed) {
+                foreach (var mod in processed)
+                {
                     stringBuilder.AppendLine($"{mod} - {procMod.DisplayName}");
                 }
             }
