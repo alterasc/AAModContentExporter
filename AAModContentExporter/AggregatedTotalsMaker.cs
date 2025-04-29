@@ -9,6 +9,7 @@ internal static class AggregatedTotalsMaker
     {
         RecreateGenericTotal(scanMetaData, "Classes", "New classes");
         RecreateGenericTotal(scanMetaData, "Archetypes", "New archetypes for base classes");
+        RecreateGenericTotal(scanMetaData, "Races", "New races");
         RecreateGenericTotal(scanMetaData, "Feats", "New feats");
         RecreateGenericTotal(scanMetaData, "Spells", "New spells");
         RecreateGenericTotal(scanMetaData, "MythicFeats", "New mythic feats");

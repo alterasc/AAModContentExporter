@@ -69,4 +69,10 @@ internal static class ExportersCollection
         var list = analyzed.Where(x => x.IsOracleMystery).OrderBy(x => x.DisplayName).ToList();
         return ExporterUtils.WriteNameDescriptionList("OracleMysteries", "Oracle Mysteries", list);
     }
+
+    internal static int WriteAllRaces(List<BlueprintData> analyzed)
+    {
+        var list = analyzed.Where(x => x.IsRace).OrderBy(x => x.DisplayName).ToList();
+        return ExporterUtils.WriteNameDescriptionList("Races", "Races", list);
+    }
 }

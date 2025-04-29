@@ -209,12 +209,26 @@ public static class BlueprintAnalyzer
                 result.Parent = origClass.LocalizedName ?? string.Empty;
             }
         }
+        else if (bp is BlueprintRace race)
+        {
+            result.IsRace = true;
+            result.DisplayName = race.m_DisplayName.ToString();
+            result.Description = race.m_Description.ToString();
+        }
         else if (bp is BlueprintUnitFact unitFact)
         {
             result.IsUnitFact = true;
             if (unitFact.m_DisplayName != null)
             {
-                result.DisplayName = unitFact.m_DisplayName.ToString();
+                try
+                {
+                    result.DisplayName = unitFact.m_DisplayName.ToString();
+                }
+                catch (System.Exception ex)
+                {
+                    result.DisplayName = "";
+                    Main.log.Log($"Couldn't process name for {unitFact.name}, guid {unitFact.AssetGuid}");
+                }
             }
             try
             {
@@ -274,7 +288,15 @@ public static class BlueprintAnalyzer
             }
             result.IsItem = true;
             result.DisplayName = item.Name;
-            result.Description = item.Description;
+            try
+            {
+                result.Description = item.Description;
+            }
+            catch (System.Exception)
+            {
+                result.Description = "";
+                Main.log.Log($"Couldn't process name for {item.name}, guid {item.AssetGuid}");
+            }
         }
         return result;
     }
@@ -311,6 +333,7 @@ public class BlueprintData
     public bool IsClassFeature;
     public bool IsDomain;
     public bool IsSorcererBloodline;
+    public bool IsRace;
     public bool IsRacialHeritage;
     public bool IsRogueTalent;
     public bool IsSlayerTalent;

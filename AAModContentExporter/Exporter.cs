@@ -1,6 +1,7 @@
 ﻿using AAModContentExporter.Exporters;
 using AAModContentExporter.ModfinderIntegration;
 using Kingmaker.Blueprints;
+using Kingmaker.BundlesLoading;
 using Kingmaker.Modding;
 using Kingmaker.Utility;
 using Newtonsoft.Json;
@@ -35,8 +36,6 @@ public static class Exporter
 
     public static void Export()
     {
-        var baseGame = $"{Main.ModEntry.Path}{Path.DirectorySeparatorChar}Base.guids";
-
         var exportMetaData = $"{Main.ExportRepoLocation}{Path.DirectorySeparatorChar}scanmetadata.json";
 
         var serializer = JsonSerializer.Create(Main.SerializerSettings);
@@ -81,25 +80,6 @@ public static class Exporter
             .Where(modEntry => modEntry.Active)
             .ToList();
 
-        if (!File.Exists(baseGame))
-        {
-            var unknownMods = activeMods.Where(x => !excludedMods.Contains(x.Info.Id)).ToList();
-            if (unknownMods.Count > 0)
-            {
-                Main.log.Log($"Base game guid database is not built, because found active mods that are not marked as not content adding");
-                foreach (var mod in unknownMods)
-                {
-                    Main.log.Log($"{mod.Info.Id} - {mod.Info.Version} - {mod.Info.DisplayName}");
-                }
-                return;
-            }
-            var keys = ResourcesLibrary.BlueprintsCache.m_LoadedBlueprints.Keys.ToArray();
-            var length = keys.Length;
-            GuidSerialization.SerializeGuids(keys, baseGame);
-            Main.log.Log("Exported base game guids");
-            return;
-        }
-
         var newMods = activeMods
             .Where(x => !excludedMods.Contains(x.Info.Id))
             .Where(x =>
@@ -125,6 +105,8 @@ public static class Exporter
             return;
         }
 
+        LoadBaseGameGuids();
+        
         if (newModsTotal > 1)
         {
             Main.log.Log("Found more than one unprocessed mod, skipping export");
@@ -172,10 +154,6 @@ public static class Exporter
         }
 
         ExportOutput = $"{Main.ModSettings.OutputFolder}{Path.DirectorySeparatorChar}docs{Path.DirectorySeparatorChar}{modToAnalyze.ModId}";
-
-
-
-        KnownGuids = new HashSet<BlueprintGuid>(GuidSerialization.DeserializeGuids(baseGame));
 
         foreach (var key in KnownGuids)
         {
@@ -273,6 +251,11 @@ public static class Exporter
                 if (ArchetypeExporter.WriteAllArchetypes(analyzed) > 0)
                 {
                     sb.AppendLine($"### [New archetypes for base game classes](./Archetypes.md)");
+                    sb.AppendLine();
+                }
+                if (ExportersCollection.WriteAllRaces(analyzed) > 0)
+                {
+                    sb.AppendLine($"### [New races](./Races.md)");
                     sb.AppendLine();
                 }
                 if (ExportersCollection.WriteAllFeats(analyzed) > 0)
@@ -455,5 +438,23 @@ public static class Exporter
         sb.AppendLine(mid);
         var readmeToC = $"{Main.ExportRepoLocation}{Path.DirectorySeparatorChar}docs{Path.DirectorySeparatorChar}README.md";
         File.WriteAllText(readmeToC, sb.ToString());
+    }
+
+    public static void LoadBaseGameGuids()
+    {
+        string path = BundlesLoadService.BundlesPath("blueprints-pack.bbp");
+        var m_PackFile = new FileStream(path, FileMode.Open, FileAccess.Read);
+        byte[] array = new byte[16];
+        using (BinaryReader binaryReader = new BinaryReader(m_PackFile, Encoding.UTF8, true))
+        {
+            int num = binaryReader.ReadInt32();
+            for (int i = 0; i < num; i++)
+            {
+                binaryReader.Read(array, 0, 16);
+                BlueprintGuid key = new(array);
+                KnownGuids.Add(key);
+                _ = binaryReader.ReadUInt32();
+            }
+        }
     }
 }
