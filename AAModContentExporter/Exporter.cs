@@ -139,21 +139,21 @@ public static class Exporter
         {
             var modPath = newMods.First().Path;
             var blueprintsPath = $"{modPath}{Path.DirectorySeparatorChar}UserSettings{Path.DirectorySeparatorChar}Blueprints.json";
-            if (File.Exists(blueprintsPath))
-            {
-                try
-                {
-                    using StreamReader streamReader = File.OpenText(blueprintsPath);
-                    using JsonReader jsonReader = new JsonTextReader(streamReader);
-                    blueprintsJson = serializer.Deserialize<TTTStyleBlueprints>(jsonReader);
-                    blueprintModCount = blueprintsJson.NewBlueprints.Count + blueprintsJson.DerivedBlueprints.Count + blueprintsJson.DerivedBlueprintMasters.Count;
-                    Main.log.Log($"Mod Blueprints.json announce {blueprintModCount} new blueprints");
-                }
-                catch (Exception ex)
-                {
-                    Main.log.Log($"Failed to read Blueprints.json: {ex.Message}");
-                }
-            }
+            //if (File.Exists(blueprintsPath))
+            //{
+            //    try
+            //    {
+            //        using StreamReader streamReader = File.OpenText(blueprintsPath);
+            //        using JsonReader jsonReader = new JsonTextReader(streamReader);
+            //        blueprintsJson = serializer.Deserialize<TTTStyleBlueprints>(jsonReader);
+            //        blueprintModCount = blueprintsJson.NewBlueprints.Count + blueprintsJson.DerivedBlueprints.Count + blueprintsJson.DerivedBlueprintMasters.Count;
+            //        Main.log.Log($"Mod Blueprints.json announce {blueprintModCount} new blueprints");
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        Main.log.Log($"Failed to read Blueprints.json: {ex.Message}");
+            //    }
+            //}
         }
 
         ExportOutput = $"{Main.ModSettings.OutputFolder}{Path.DirectorySeparatorChar}docs{Path.DirectorySeparatorChar}{modToAnalyze.ModId}";
