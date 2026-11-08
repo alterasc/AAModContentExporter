@@ -13,9 +13,11 @@ using System.Text;
 using UnityModManagerNet;
 
 namespace AAModContentExporter;
+
 public static class Exporter
 {
     public static HashSet<BlueprintGuid> KnownGuids = [];
+    public static HashSet<Guid> BaseGameGuids = [];
     public static Dictionary<BlueprintGuid, SimpleBlueprint> ModBlueprints = [];
     public static Dictionary<BlueprintGuid, BlueprintData> ModBlueprintData = [];
 
@@ -90,6 +92,7 @@ public static class Exporter
 
         var owlMods = OwlcatModificationsManager.Instance
             .AppliedModifications
+            .Where(x => !excludedMods.Contains(x.Manifest.UniqueName))
             .Where(x =>
             {
                 return !scanMetaData.ProcessedMods.Any(y => y.ModId == x.Manifest.UniqueName && y.Version == x.Manifest.Version);
@@ -106,7 +109,7 @@ public static class Exporter
         }
 
         LoadBaseGameGuids();
-        
+
         if (newModsTotal > 1)
         {
             Main.log.Log("Found more than one unprocessed mod, skipping export");
@@ -124,7 +127,7 @@ public static class Exporter
         {
             ModId = newMods.Count == 1 ? newMods.First().Info.Id : owlMods.First().Manifest.UniqueName,
             Version = newMods.Count == 1 ? newMods.First().Info.Version : owlMods.First().Manifest.Version,
-            DisplayName = newMods.Count == 1 ? newMods.First().Info.DisplayName : owlMods.First().Manifest.DisplayName,
+            DisplayName = newMods.Count == 1 ? newMods.First().Info.DisplayName : (string.IsNullOrEmpty(owlMods.First().Manifest.DisplayName) ? owlMods.First().Manifest.UniqueName : owlMods.First().Manifest.DisplayName),
         };
         var author = newMods.Count == 1 ? newMods.First().Info.Author : owlMods.First().Manifest.Author;
         var homePage = newMods.Count == 1 ? newMods.First().Info.HomePage : owlMods.First().Manifest.HomePage;
@@ -177,6 +180,7 @@ public static class Exporter
         var bpkeys = ResourcesLibrary.BlueprintsCache.m_LoadedBlueprints.Keys.Where(x => !KnownGuids.Contains(x)).ToList();
         var newBlueprints = bpkeys
             .Select(x => ResourcesLibrary.TryGetBlueprint(x))
+            .Where(x => x.AssetGuid.m_Guid != new Guid("0034a132380641a0840ff684facbd476"))
             .ToList();
 
         if (newBlueprints.Count == 0)
@@ -349,7 +353,17 @@ public static class Exporter
 
     internal static void MakeAllGuidsFile()
     {
-        StringBuilder stringBuilder = new StringBuilder();
+
+        var readmepath = $"{Main.ExportRepoLocation}{Path.DirectorySeparatorChar}all_blueprints.txt";
+        var allBpLines = File.ReadAllLines(readmepath);
+        Dictionary<string, string> guidToMod = [];
+        foreach (var line in allBpLines)
+        {
+            var guid = line.Substring(0, 32);
+            var modName = line.Substring(35);
+            guidToMod[guid] = modName;
+        }
+
         foreach (var procMod in scanMetaData.ProcessedMods)
         {
             var path = $"{Main.ModSettings.OutputFolder}{Path.DirectorySeparatorChar}docs{Path.DirectorySeparatorChar}{procMod.ModId}{Path.DirectorySeparatorChar}blueprintguids.bin";
@@ -358,11 +372,17 @@ public static class Exporter
                 var processed = GuidSerialization.DeserializeGuids(path);
                 foreach (var mod in processed)
                 {
-                    stringBuilder.AppendLine($"{mod} - {procMod.DisplayName}");
+                    guidToMod[mod.ToString()] = procMod.DisplayName;
                 }
             }
         }
-        var readmepath = $"{Main.ExportRepoLocation}{Path.DirectorySeparatorChar}all_blueprints.txt";
+
+        StringBuilder stringBuilder = new StringBuilder();
+        foreach (var entry in guidToMod.OrderBy(x => x.Value).ThenBy(x => x.Key))
+        {
+            stringBuilder.AppendLine($"{entry.Key} - {entry.Value}");
+        }
+
         File.WriteAllText(readmepath, stringBuilder.ToString());
     }
 
@@ -455,6 +475,7 @@ public static class Exporter
                 binaryReader.Read(array, 0, 16);
                 BlueprintGuid key = new(array);
                 KnownGuids.Add(key);
+                BaseGameGuids.Add(key.m_Guid);
                 _ = binaryReader.ReadUInt32();
             }
         }
